@@ -1,0 +1,16 @@
+[
+  {
+    "objectID": "index.html",
+    "href": "index.html",
+    "title": "Average age of people moving to Sarasota County",
+    "section": "",
+    "text": "This plot estimates the average age of people who moved to Sarasota County from another county, state, or country. ACS reports age in groups, so each group is represented by its midpoint; the 75-and-over group is represented by age 80.\n\nlibrary(tidycensus)\nlibrary(dplyr)\n\n\nAttaching package: 'dplyr'\n\n\nThe following objects are masked from 'package:stats':\n\n    filter, lag\n\n\nThe following objects are masked from 'package:base':\n\n    intersect, setdiff, setequal, union\n\nlibrary(ggplot2)\n\nmover_age_midpoints &lt;- tibble(\n  variable = sprintf(\"B07001_%03dE\", c(50:64, 66:80, 82:96)),\n  age_midpoint = rep(\n    c(2.5, 11, 18.5, 22, 27, 32, 37, 42, 47, 52, 57, 62, 67, 72, 80),\n    times = 3\n  )\n)\n\nsarasota_movers &lt;- get_acs(\n  geography = \"county\",\n  state = \"FL\",\n  county = \"Sarasota\",\n  table = \"B07001\",\n  year = 2024\n)\n\nGetting data from the 2020-2024 5-year ACS\n\nsarasota_average_age &lt;- sarasota_movers |&gt;\n  filter(variable %in% mover_age_midpoints$variable) |&gt;\n  left_join(mover_age_midpoints, by = \"variable\") |&gt;\n  group_by(NAME) |&gt;\n  summarise(\n    average_age = weighted.mean(age_midpoint, estimate),\n    .groups = \"drop\"\n  )\n\nggplot(sarasota_average_age, aes(x = NAME, y = average_age)) +\n  geom_col(fill = \"steelblue\") +\n  geom_text(aes(label = round(average_age, 1)), vjust = -0.5) +\n  labs(\n    title = \"Estimated average age of people moving to Sarasota County\",\n    x = NULL,\n    y = \"Estimated average age (years)\",\n    caption = \"2024 ACS 5-year estimates. Ages are estimated from age-group midpoints; 75+ is assigned age 80.\"\n  ) +\n  theme_minimal()"
+  },
+  {
+    "objectID": "about.html",
+    "href": "about.html",
+    "title": "About",
+    "section": "",
+    "text": "About this site"
+  }
+]

@@ -1,7 +1,50 @@
 ---
-title: "census-mapping"
+title: "Average age of people moving to Sarasota County"
 ---
 
-This is a Quarto website.
+This plot estimates the average age of people who moved to Sarasota County
+from another county, state, or country. ACS reports age in groups, so each
+group is represented by its midpoint; the 75-and-over group is represented by
+age 80.
 
-To learn more about Quarto websites visit <https://quarto.org/docs/websites>.
+```{r}
+library(tidycensus)
+library(dplyr)
+library(ggplot2)
+
+mover_age_midpoints <- tibble(
+  variable = sprintf("B07001_%03dE", c(50:64, 66:80, 82:96)),
+  age_midpoint = rep(
+    c(2.5, 11, 18.5, 22, 27, 32, 37, 42, 47, 52, 57, 62, 67, 72, 80),
+    times = 3
+  )
+)
+
+sarasota_movers <- get_acs(
+  geography = "county",
+  state = "FL",
+  county = "Sarasota",
+  table = "B07001",
+  year = 2024
+)
+
+sarasota_average_age <- sarasota_movers |>
+  filter(variable %in% mover_age_midpoints$variable) |>
+  left_join(mover_age_midpoints, by = "variable") |>
+  group_by(NAME) |>
+  summarise(
+    average_age = weighted.mean(age_midpoint, estimate),
+    .groups = "drop"
+  )
+
+ggplot(sarasota_average_age, aes(x = NAME, y = average_age)) +
+  geom_col(fill = "steelblue") +
+  geom_text(aes(label = round(average_age, 1)), vjust = -0.5) +
+  labs(
+    title = "Estimated average age of people moving to Sarasota County",
+    x = NULL,
+    y = "Estimated average age (years)",
+    caption = "2024 ACS 5-year estimates. Ages are estimated from age-group midpoints; 75+ is assigned age 80."
+  ) +
+  theme_minimal()
+```
